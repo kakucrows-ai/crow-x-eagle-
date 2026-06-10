@@ -3,10 +3,10 @@
 const config = require("../config.json");
 
 module.exports = {
-  name: "help",
-  aliases: ["h", "cmds", "commands"],
-  description: "عرض قائمة جميع الأوامر أو تفاصيل أمر معين.",
-  usage: "help [command]",
+  name: "menu",
+  aliases: ["help", "h", "قائمة"],
+  description: "عرض قائمة أوامر الغراب أو تفاصيل أمر معين.",
+  usage: "menu [أمر]",
   category: "General",
 
   async execute({ api, event, args, commands }) {
@@ -14,27 +14,34 @@ module.exports = {
 
     // ── تفاصيل أمر واحد ────────────────────────────────────────────────────
     if (args[0]) {
-      const name = args[0].toLowerCase().replace(/^-+/, "");
+      const name = args[0].toLowerCase().replace(/^\*+/, "");
       const cmd  = commands.get(name) ||
         [...new Set(commands.values())].find(c => c.aliases?.includes(name));
       if (!cmd) {
-        return api.sendMessage(`❌ الأمر "${name}" غير موجود.`, event.threadID);
+        return api.sendMessage(
+          `🐦‍⬛ لا يوجد أمر باسم "${name}" في مخالب الغراب.`,
+          event.threadID
+        );
       }
       const lines = [
-        `📖 الأمر     : ${prefix}${cmd.name}`,
-        `📝 الوصف     : ${cmd.description}`,
-        `🏷️ الفئة     : ${cmd.category || "General"}`,
-        `📌 الاستخدام : ${prefix}${cmd.usage || cmd.name}`,
+        `🪶━━━━━━━━━━━━━━━━━━━━🪶`,
+        `🐦‍⬛  ${prefix}${cmd.name}`,
+        `🪶━━━━━━━━━━━━━━━━━━━━🪶`,
+        ``,
+        `📜 الوصف     : ${cmd.description}`,
+        `🗡️  الاستخدام : ${prefix}${cmd.usage || cmd.name}`,
       ];
       if (cmd.aliases?.length) {
         lines.push(`🔁 الاختصارات: ${cmd.aliases.map(a => prefix + a).join("  ")}`);
       }
-      if (cmd.adminOnly)  lines.push(`🔒 يتطلب صلاحية مشرف`);
+      if (cmd.ownerOnly)  lines.push(`👑 للمالك فقط`);
+      else if (cmd.adminOnly) lines.push(`🔒 يتطلب صلاحية مشرف`);
       if (cmd.groupOnly)  lines.push(`👥 للمجموعات فقط`);
+      lines.push(``, `🪶━━━━━━━━━━━━━━━━━━━━🪶`);
       return api.sendMessage(lines.join("\n"), event.threadID);
     }
 
-    // ── قائمة كل الأوامر (بدون تكرار) ────────────────────────────────────
+    // ── قائمة الأوامر ──────────────────────────────────────────────────────
     const unique     = [...new Set(commands.values())];
     const categories = {};
 
@@ -44,35 +51,35 @@ module.exports = {
       categories[cat].push(cmd.name);
     }
 
-    // ترتيب الفئات
-    const ORDER = ["General", "Info", "Utility", "Group", "Fun"];
+    const ORDER = ["General", "Admin", "Group", "الملاك"];
     const sorted = [
       ...ORDER.filter(c => categories[c]),
       ...Object.keys(categories).filter(c => !ORDER.includes(c)),
     ];
 
-    const ICONS = {
-      General  : "🔹",
-      Info     : "🔹",
-      Utility  : "🔧",
-      Group    : "🔸",
-      Fun      : "🎮",
+    const CAT_ICONS = {
+      General  : "🌑",
+      Admin    : "🔴",
+      Group    : "🪶",
+      "الملاك" : "🐦‍⬛",
     };
 
-    let msg = `┌──── 🤖 ${config.bot.name} Commands ────\n│\n`;
+    let msg = "";
+    msg += `🐦‍⬛━━━━━━━━━━━━━━━━━━━━🐦‍⬛\n`;
+    msg += `       𝕮 𝕽 𝕺 𝕎\n`;
+    msg += ` 𝓢𝓸𝓾𝓵 𝓸𝓯 𝓽𝓱𝓮 𝓓𝓪𝓻𝓴𝓷𝓮𝓼𝓼\n`;
+    msg += `🐦‍⬛━━━━━━━━━━━━━━━━━━━━🐦‍⬛\n`;
 
     for (const cat of sorted) {
-      const cmds = categories[cat].map(n => `${prefix}${n}`);
-      const icon = ICONS[cat] || "▪️";
-      msg += `│ ${icon} 【${cat}】\n`;
-      // كل أمر في سطر منفصل لسهولة القراءة
-      for (const c of cmds) {
-        msg += `│    ${c}\n`;
+      const icon = CAT_ICONS[cat] || "🪶";
+      msg += `\n${icon} ─── ${cat} ───\n`;
+      for (const name of categories[cat]) {
+        msg += `  ⌁ ${prefix}${name}\n`;
       }
-      msg += `│\n`;
     }
 
-    msg += `└─ اكتب ${prefix}help <أمر> لتفاصيل أي أمر`;
+    msg += `\n🐦‍⬛━━━━━━━━━━━━━━━━━━━━🐦‍⬛\n`;
+    msg += `🪶 ${prefix}menu <أمر> لتفاصيل أي أمر`;
 
     api.sendMessage(msg, event.threadID);
   },
